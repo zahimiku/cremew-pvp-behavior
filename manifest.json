@@ -1,0 +1,26 @@
+{
+    "format_version": 2,
+    "header": {
+        "name": "cremew_pvp_behavior",
+        "description": "pvp",
+        "version": [1, 0, 0],
+        "uuid": "98483929-86ef-43c3-bfdc-2cafdcc69908",
+        "min_engine_version": [1, 19, 70]
+    },
+    "modules": [
+        {
+            "type": "script",
+            "description": "cremew pvp script",
+            "version": [1, 0, 0],
+            "uuid": "8c7b51d7-c604-4b0d-97d2-1492a0aec67a",
+            "language": "javascript",
+            "entry": "scripts/main.js"
+        }
+    ],
+    "dependencies": [
+        {
+            "module_name": "@minecraft/server",
+            "version": "beta"
+        }
+    ]
+}
