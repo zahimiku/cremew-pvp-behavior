@@ -10,7 +10,7 @@
         "components": {
             "minecraft:icon": {
                 "textures": {
-                    "default": "stick"
+                    "default": "pink_heart_wand"
                 }
             },
             "minecraft:can_destroy_in_creative": false,

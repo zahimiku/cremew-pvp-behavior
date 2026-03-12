@@ -10,7 +10,7 @@
         "components": {
             "minecraft:icon": {
                 "textures": {
-                    "default": "stick"
+                    "default": "blue_wand"
                 }
             },
             "minecraft:can_destroy_in_creative": false,
