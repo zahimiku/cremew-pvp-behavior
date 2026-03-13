@@ -1,0 +1,26 @@
+{
+    "format_version": "1.21.60",
+    "minecraft:entity": {
+        "description": {
+            "identifier": "cremew:water_ball",
+            "runtime_identifier": "minecraft:snowball",
+            "is_spawnable": false,
+            "is_summonable": true
+        },
+        "components": {
+            "minecraft:collision_box": {
+                "width": 0.2,
+                "height": 0.2
+            },
+            "minecraft:projectile": {
+                "on_hit": {
+                    "remove_on_hit": {}
+                },
+                "gravity": 0,
+                "inertia": 1.0,
+                "uncertainty_base": 0,
+                "uncertainty_multiplier": 0
+            }
+        }
+    }
+}
