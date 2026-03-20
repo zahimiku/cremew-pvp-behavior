@@ -7,19 +7,35 @@
             "is_spawnable": false,
             "is_summonable": true
         },
+        "component_groups": {
+            "cremew:despawn": {
+                "minecraft:instant_despawn": {}
+            }
+        },
         "components": {
-            "minecraft:collision_box": {
-                "width": 0.2,
-                "height": 0.2
+            "minecraft:timer": {
+                "looping": false,
+                "time": 3,
+                "time_down_event": {
+                    "event": "cremew:despawn",
+                    "target": "self"
+                }
             },
             "minecraft:projectile": {
-                "on_hit": {
-                    "remove_on_hit": {}
-                },
                 "gravity": 0,
-                "inertia": 1.0,
+                "inertia": 1,
+                "liquid_inertia": 1,
                 "uncertainty_base": 0,
                 "uncertainty_multiplier": 0
+            }
+        },
+        "events": {
+            "cremew:despawn": {
+                "add": {
+                    "component_groups": [
+                        "cremew:despawn"
+                    ]
+                }
             }
         }
     }
