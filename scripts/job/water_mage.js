@@ -28,7 +28,7 @@ export class WaterMage extends MageBase {
             /** @description 直撃ダメージ乗数　*/
             hitMultiplier: 1.5,
             /** @description 爆発範囲　*/
-            scale: 0.7,
+            scale: 1.5,
             /** @description 最大存在時間(tick)　*/
             time: 20,
             /** @description クールタイム(tick) */
@@ -41,10 +41,12 @@ export class WaterMage extends MageBase {
             if (this.checkMainhand(player) && mpCheck(player, this.leftClickStatus.mp) && ctCheck(player, this.leftClick.name)) {
                 changeMp(player, -this.leftClickStatus.mp);
                 startCt(player, this.leftClick.name, this.leftClickStatus.cooltime);
-                const entity = player.dimension.spawnEntity(this.leftClickStatus.mcid, player.getHeadLocation());
+                const head = player.getHeadLocation();
+                const entity = player.dimension.spawnEntity(this.leftClickStatus.mcid, head);
                 const projectile = entity.getComponent("projectile");
                 projectile.owner = player;
                 projectile.shoot(player.getViewDirection());
+                player.dimension.playSound("bucket.fill_water", head, { pitch: 1.5, volume: 1 });
                 system.runTimeout(() => {
                     if (entity.isValid) {
                         this.waterBallExplosion({ dimension: player.dimension, location: entity.location, projectile: entity, source: player }, entity);
@@ -71,6 +73,10 @@ export class WaterMage extends MageBase {
      */
     static waterBallExplosion(ev, entity) {
         if (entity && !entity.isValid) return;
+
+
+        ev.dimension.playSound("mob.dolphin.splash", ev.location,  { pitch: 1.3, volume: 1.2 });
+        ev.dimension.playSound("mob.squid.ink_squirt", ev.location, { pitch: 1.6, volume: 0.5 });
         try {
             ev.dimension.spawnParticle("cremew:water_explosion", ev.location);
         } catch {
@@ -91,6 +97,8 @@ export class WaterMage extends MageBase {
                 DamageSystem.applyDamage(explosionEntity, damage, ev.source);
             }
         }
-        ev.projectile.remove();
+        if (ev.projectile.isValid) {
+            ev.projectile.remove();
+        };
     };
 };
