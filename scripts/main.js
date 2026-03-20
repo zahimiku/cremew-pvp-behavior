@@ -2,42 +2,62 @@ import {
     world,
     system
 } from "@minecraft/server";
-import { ModalFormData } from "@minecraft/server-ui";
+import { MageList } from "./job/mage_list";
+import {} from "./job/mage_base";
+import { WaterMage } from "./job/water_mage";
+import {} from "./damage_system";
+import {} from "./function";
+import { ProjectileList } from "./projectile_list";
 
 world.afterEvents.worldLoad.subscribe(ev => {
     console.warn("loaded")
 })
 
 world.afterEvents.itemUse.subscribe(ev => {
-    const { source: player, itemStack: item } = ev;
-    world.sendMessage(`[itemUse]${player.name} => ${item.typeId}`)
-    if (item.typeId === "minecraft:stick") {
-        const entity = player.dimension.spawnEntity("cremew:water_ball", player.getHeadLocation());
-        //entity.addEffect("levitation", 60, {amplifier: 3, showParticles: false});
-        const projectile = entity.getComponent("projectile");
-        projectile.owner = player;
-        projectile.shoot(player.getViewDirection());
-        system.runTimeout(() => {
-            if (entity.isValid) {
-                try {
-                    player.dimension.spawnParticle("cremew:water_explosion", entity.location);
-                } catch {
+    const { source, itemStack } = ev;
+    const job = MageList.get(source);
 
-                }
-                entity.remove()
-            };
-        }, 20);
-    };
+    if (!source.isSneaking) {
+        const interact = "rightClick";
+        job?.interact(source, itemStack, interact);
+    }
+    else {
+        const interact = "sneakRightClick";
+        job?.interact(source, itemStack, interact);
+    }
+    if (itemStack.typeId === "minecraft:diamond") source.setDynamicProperty("job", WaterMage.mageName);
+    else if (itemStack.typeId === "minecraft:iron_ingot") source.setDynamicProperty("job");
+});
+
+world.afterEvents.playerSwingStart.subscribe(ev => {
+    const { heldItemStack, player, swingSource } = ev;
+    const job = MageList.get(player);
+
+    if (!player.isSneaking) {
+        const interact = "leftClick";
+        job?.interact(player, heldItemStack, interact);
+    }
+    else {
+        const interact = "sneakLeftClick";
+        job?.interact(player, heldItemStack, interact);
+    }
 });
 
 world.afterEvents.projectileHitEntity.subscribe(ev => {
     const { dimension, hitVector, location, projectile, source } = ev;
     const entity = ev.getEntityHit().entity;
+    const result = ProjectileList.get(projectile.typeId);
+    if (result) {
+        result.func(ev, entity);
+    }
 });
 
 world.afterEvents.projectileHitBlock.subscribe(ev => {
     const { dimension, hitVector, location, projectile, source } = ev;
-    world.sendMessage("aaa")
+    const result = ProjectileList.get(projectile.typeId);
+    if (result && result.ground) {
+        result.func(ev);
+    }
 });
 
 world.afterEvents.playerSpawn.subscribe(ev => {
@@ -45,6 +65,8 @@ world.afterEvents.playerSpawn.subscribe(ev => {
     if (initialSpawn) {
         player.onScreenDisplay.setHudVisibility(0, [1, 6, 7, 8, 10]);
     }
+    player.hp = 100;
+    player.mp = 100;
 });
 
 system.runInterval(() => {
