@@ -38,6 +38,7 @@ export function mpCheck(player, value) {
  */
 export function changeMp(player, value) {
     player.mp += value;
+    setActionBar(player);
 };
 
 /**
@@ -58,4 +59,12 @@ export function ctCheck(player, id) {
  */
 export function startCt(player, id, time) {
     player[id] = system.currentTick + time;
+};
+
+/**
+ * @description playerのactionbarを変更する関数 ステータス変更時に行うと良き
+ * @param {Player} player 
+ */
+export function setActionBar(player) {
+    player.onScreenDisplay.setActionBar(`h_${(((player.hp / player.m_hp) * 100 ?? 0).toFixed()).padStart(3, "0")}H_${((player.hp ?? 0).toFixed()).padStart(3, "_")}m_${(((player.mp / player.m_mp) * 100 ?? 0).toFixed()).padStart(3, "0")}M_${((player.mp ?? 0).toFixed()).padStart(3, "_")}s_${(((player.sp / player.m_sp) * 100 ?? 0).toFixed()).padStart(3, "0")}S_${((player.sp / player.m_sp * 100 ?? 0).toFixed()).padStart(3, "_")}§@`);
 };

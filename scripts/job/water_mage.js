@@ -1,4 +1,4 @@
-import { Player, system, Entity, Dimension, Vector3 } from "@minecraft/server";
+import { Player, system, Entity, Dimension, Vector3, server, MolangVariableMap } from "@minecraft/server";
 import { MageBase } from "./mage_base";
 import { DamageSystem } from "../damage_system";
 import { changeMp, ctCheck, mpCheck, startCt } from "../function";
@@ -21,8 +21,8 @@ export class WaterMage extends MageBase {
         return {
             /** @description 発射体のid */
             mcid: "cremew:water_ball",
-            /** @description 基礎ダメージ */
-            damage: 20,
+            /** @description ダメージ */
+            damage: 24,
             /** @description 消費MP */
             mp: 2,
             /** @description 直撃ダメージ乗数　*/
@@ -37,12 +37,13 @@ export class WaterMage extends MageBase {
     };
 
     static leftClick(player) {
+        const status = this.leftClickStatus;
         if (player) {
-            if (this.checkMainhand(player) && mpCheck(player, this.leftClickStatus.mp) && ctCheck(player, this.leftClick.name)) {
-                changeMp(player, -this.leftClickStatus.mp);
-                startCt(player, this.leftClick.name, this.leftClickStatus.cooltime);
+            if (this.checkMainhand(player) && mpCheck(player, status.mp) && ctCheck(player, this.leftClick.name)) {
+                changeMp(player, -status.mp);
+                startCt(player, this.leftClick.name, status.cooltime);
                 const head = player.getHeadLocation();
-                const entity = player.dimension.spawnEntity(this.leftClickStatus.mcid, head);
+                const entity = player.dimension.spawnEntity(status.mcid, head);
                 const projectile = entity.getComponent("projectile");
                 projectile.owner = player;
                 projectile.shoot(player.getViewDirection());
@@ -51,17 +52,16 @@ export class WaterMage extends MageBase {
                     if (entity.isValid) {
                         this.waterBallExplosion({ dimension: player.dimension, location: entity.location, projectile: entity, source: player }, entity);
                     };
-                }, this.leftClickStatus.time);
+                }, status.time);
             };
         }
         else {
-            const status = this.leftClickStatus;
             return `<通常攻撃>
 基礎ダメージ : ${status.damage}
 消費MP : ${status.mp}
-何かに衝突するか${status.time * system.currentTick}秒経つと爆発する水球を放つ
-敵に水球が直撃するとその敵に${status.hitMultiplier}倍のダメージを与える
-クールタイム : ${status.cooltime * system.currentTick}秒`
+何かに衝突するか${status.time / server.TicksPerSecond}秒経つと爆発する<水球>を放つ
+敵に<水球>が直撃するとその敵に${status.hitMultiplier}倍のダメージを与える
+クールタイム : ${status.cooltime / server.TicksPerSecond}秒`
         };
     };
 
@@ -75,7 +75,7 @@ export class WaterMage extends MageBase {
         if (entity && !entity.isValid) return;
 
 
-        ev.dimension.playSound("mob.dolphin.splash", ev.location,  { pitch: 1.3, volume: 1.2 });
+        ev.dimension.playSound("mob.dolphin.splash", ev.location, { pitch: 1.3, volume: 1.2 });
         ev.dimension.playSound("mob.squid.ink_squirt", ev.location, { pitch: 1.6, volume: 0.5 });
         try {
             ev.dimension.spawnParticle("cremew:water_explosion", ev.location);
@@ -89,16 +89,55 @@ export class WaterMage extends MageBase {
             hit = entity;
         }
 
-        for (const explosionEntity of ev.dimension.getEntities({ location: ev.location, maxDistance: this.leftClickStatus.scale, families: ["player"] })) {
+        const status = this.leftClickStatus;
+
+        for (const explosionEntity of ev.dimension.getEntities({ location: ev.location, maxDistance: status.scale, families: ["player"] })) {
             if (explosionEntity.team !== (ev.source?.team ?? explosionEntity.team) && explosionEntity.hp > 0) {
-                let damage = this.leftClickStatus.damage;
-                if (explosionEntity.id === hit?.id) damage *= this.leftClickStatus.hitMultiplier;
+                let damage = status.damage;
+                if (explosionEntity.id === hit?.id) damage *= status.hitMultiplier;
 
                 DamageSystem.applyDamage(explosionEntity, damage, ev.source);
             }
         }
         if (ev.projectile.isValid) {
             ev.projectile.remove();
+        };
+    };
+
+    static get rightClickStatus() {
+        return {
+            /** @description 消費MP */
+            mp: 18,
+            /** @description 範囲　*/
+            scale: 3.25,
+            /** @description 味方への移動速度上昇(%)　*/
+            speedUp: 0.25,
+            /** @description 敵への移動速度低下(%)　*/
+            speedDown: 0.15,
+            /** @description 継続時間(tick)　*/
+            time: 140,
+            /** @description クールタイム(tick) */
+            cooltime: 320
+        }
+    };
+
+    static rightClick(player) {
+        const status = this.rightClickStatus;
+        if (player) {
+            if (this.checkMainhand(player) && mpCheck(player, status.mp) && ctCheck(player, this.rightClick.name)) {
+                changeMp(player, -status.mp);
+                startCt(player, this.rightClick.name, status.cooltime);
+                const loc = player.Location;
+
+            };
+        }
+        else {
+            return `<アビリティ>
+消費MP : ${status.mp}
+${status.time / server.TicksPerSecond}秒継続する<水の領域>を展開する
+<水の領域>の範囲内の味方は、移動速度が${status.speedUp * 100}%%上昇し、
+範囲内の敵は、移動速度が${status.speedUp * 100}%%低下する
+クールタイム : ${status.cooltime / server.TicksPerSecond}秒`
         };
     };
 };
