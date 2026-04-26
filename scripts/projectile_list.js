@@ -9,7 +9,7 @@ export class ProjectileList {
     /**
      * @description projectileとヒット時関数を登録する関数
      * @param {string} projectileId
-     * @param {function} projectileFunc 
+     * @param {function} projectileFunc bindしてください
      * @param {boolean} ground
      */
     static register(projectileId, projectileFunc, ground) {

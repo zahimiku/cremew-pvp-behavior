@@ -9,6 +9,12 @@
     },
     "modules": [
         {
+            "description": "cremew pvp data",
+            "type": "data",
+            "uuid": "8c27922a-86d4-4ee9-9a1e-2234c8306d70",
+            "version": [1,0,0]
+        },
+        {
             "type": "script",
             "description": "cremew pvp script",
             "version": [1, 0, 0],

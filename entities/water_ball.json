@@ -5,7 +5,15 @@
             "identifier": "cremew:water_ball",
             "runtime_identifier": "minecraft:snowball",
             "is_spawnable": false,
-            "is_summonable": true
+            "is_summonable": true,
+            "properties": {
+                "cremew:team": {
+                    "type": "int",
+                    "range": [0, 1],
+                    "default": 0,
+                    "client_sync": true
+                }
+            }
         },
         "component_groups": {
             "cremew:despawn": {

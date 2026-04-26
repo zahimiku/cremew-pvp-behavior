@@ -1,8 +1,10 @@
-import { Player, system, Entity, Dimension, Vector3, server, MolangVariableMap } from "@minecraft/server";
+import { Player, system, Entity, Dimension, Vector3, MolangVariableMap, TicksPerSecond } from "@minecraft/server";
 import { MageBase } from "./mage_base";
 import { DamageSystem } from "../damage_system";
-import { changeMp, ctCheck, mpCheck, startCt } from "../function";
+import { changeMp, ctCheck, customEntity, customSpawnParticle, mpCheck, startCt, upDirectionY } from "../function";
 import { ProjectileList } from "../projectile_list";
+import { SpeedSystem } from "../game/speed_system";
+import { GameList } from "../game/game_list";
 
 /**
  * @description 水魔法使い用のclass
@@ -15,6 +17,8 @@ export class WaterMage extends MageBase {
     static {
         this.register();
         ProjectileList.register(this.leftClickStatus.mcid, this.waterBallExplosion.bind(this), true);
+        SpeedSystem.setList(this.rightClickStatus.speedUpId, this.rightClickStatus.speedUp);
+        SpeedSystem.setList(this.rightClickStatus.speedDownId, -this.rightClickStatus.speedDown);
     };
 
     static get leftClickStatus() {
@@ -44,13 +48,14 @@ export class WaterMage extends MageBase {
                 startCt(player, this.leftClick.name, status.cooltime);
                 const head = player.getHeadLocation();
                 const entity = player.dimension.spawnEntity(status.mcid, head);
+                customEntity(player, entity);
                 const projectile = entity.getComponent("projectile");
                 projectile.owner = player;
                 projectile.shoot(player.getViewDirection());
                 player.dimension.playSound("bucket.fill_water", head, { pitch: 1.5, volume: 1 });
                 system.runTimeout(() => {
                     if (entity.isValid) {
-                        this.waterBallExplosion({ dimension: player.dimension, location: entity.location, projectile: entity, source: player }, entity);
+                        this.waterBallExplosion({ dimension: player.dimension, location: entity.location, projectile: entity, source: player });
                     };
                 }, status.time);
             };
@@ -59,9 +64,9 @@ export class WaterMage extends MageBase {
             return `<通常攻撃>
 基礎ダメージ : ${status.damage}
 消費MP : ${status.mp}
-何かに衝突するか${status.time / server.TicksPerSecond}秒経つと爆発する<水球>を放つ
+何かに衝突するか${status.time / TicksPerSecond}秒経つと爆発する<水球>を放つ
 敵に<水球>が直撃するとその敵に${status.hitMultiplier}倍のダメージを与える
-クールタイム : ${status.cooltime / server.TicksPerSecond}秒`
+クールタイム : ${status.cooltime / TicksPerSecond}秒`
         };
     };
 
@@ -74,25 +79,24 @@ export class WaterMage extends MageBase {
     static waterBallExplosion(ev, entity) {
         if (entity && !entity.isValid) return;
 
+        let hit;
+        if (entity) {
+            if (!GameList.isEnemy(ev.source, entity)) return;
+            hit = entity;
+        }
 
         ev.dimension.playSound("mob.dolphin.splash", ev.location, { pitch: 1.3, volume: 1.2 });
-        ev.dimension.playSound("mob.squid.ink_squirt", ev.location, { pitch: 1.6, volume: 0.5 });
+        const molang = new MolangVariableMap();
         try {
-            ev.dimension.spawnParticle("cremew:water_explosion", ev.location);
+            customSpawnParticle(ev.source, "cremew:water_explosion", ev.location, molang);
         } catch {
 
         };
 
-        let hit;
-        if (entity) {
-            if (entity.team === (ev.source?.team ?? false)) return
-            hit = entity;
-        }
-
         const status = this.leftClickStatus;
 
         for (const explosionEntity of ev.dimension.getEntities({ location: ev.location, maxDistance: status.scale, families: ["player"] })) {
-            if (explosionEntity.team !== (ev.source?.team ?? explosionEntity.team) && explosionEntity.hp > 0) {
+            if (GameList.isEnemy(ev.source, explosionEntity)) {
                 let damage = status.damage;
                 if (explosionEntity.id === hit?.id) damage *= status.hitMultiplier;
 
@@ -106,6 +110,8 @@ export class WaterMage extends MageBase {
 
     static get rightClickStatus() {
         return {
+            /** @description particleのid */
+            mcid: "cremew:water_area",
             /** @description 消費MP */
             mp: 18,
             /** @description 範囲　*/
@@ -117,7 +123,13 @@ export class WaterMage extends MageBase {
             /** @description 継続時間(tick)　*/
             time: 140,
             /** @description クールタイム(tick) */
-            cooltime: 320
+            cooltime: 300,
+            /** @description SpeedSystem用 */
+            speedUpId: "waterUp",
+            /** @description SpeedSystem用 */
+            speedDownId: "waterDown",
+            /** @description バフ・デバフ時間(tick) */
+            buffTime: 6
         }
     };
 
@@ -127,17 +139,41 @@ export class WaterMage extends MageBase {
             if (this.checkMainhand(player) && mpCheck(player, status.mp) && ctCheck(player, this.rightClick.name)) {
                 changeMp(player, -status.mp);
                 startCt(player, this.rightClick.name, status.cooltime);
-                const loc = player.Location;
 
+                const loc = player.location;
+
+                player.dimension.playSound("ambient.underwater.enter", loc, { pitch: 1, volume: 1 });
+                const molang = new MolangVariableMap();
+                molang.setFloat("time", status.time / TicksPerSecond);
+                molang.setFloat("size", status.scale);
+                try {
+                    customSpawnParticle(player, "cremew:water_area", upDirectionY(loc), molang);
+                } catch {
+
+                };
+                let i = 0;
+                const run = system.runInterval(() => {
+                    if (!(i % 5)) {
+                        player.dimension.playSound("bubble.downinside", loc, { pitch: 0.9, volume: 1 });
+                    }
+                    i ++;
+                    for (const target of player.dimension.getPlayers({ location: loc, maxDistance: status.scale })) {
+                        if (GameList.isEnemy(player, target)) SpeedSystem.addBuff(target, status.speedDownId, status.buffTime);
+                        else SpeedSystem.addBuff(target, status.speedUpId, status.buffTime);
+                    };
+                }, 4);
+                system.runTimeout(() => {
+                    system.clearRun(run);
+                }, status.time);
             };
         }
         else {
             return `<アビリティ>
 消費MP : ${status.mp}
-${status.time / server.TicksPerSecond}秒継続する<水の領域>を展開する
-<水の領域>の範囲内の味方は、移動速度が${status.speedUp * 100}%%上昇し、
-範囲内の敵は、移動速度が${status.speedUp * 100}%%低下する
-クールタイム : ${status.cooltime / server.TicksPerSecond}秒`
+${status.time / TicksPerSecond}秒継続する<水の領域>を展開する
+<水の領域>の範囲内の味方は、移動速度が${status.speedUp * 100}％上昇し、
+範囲内の敵は、移動速度が${status.speedUp * 100}％低下する
+クールタイム : ${status.cooltime / TicksPerSecond}秒`
         };
     };
 };

@@ -9,6 +9,8 @@ import { WaterMage } from "./job/water_mage";
 import { } from "./damage_system";
 import { } from "./function";
 import { ProjectileList } from "./projectile_list";
+import { SpeedSystem } from "./game/speed_system";
+import { GameSystem } from "./game/game_system";
 
 world.afterEvents.worldLoad.subscribe(ev => {
     console.log("loaded");
@@ -24,18 +26,14 @@ world.afterEvents.itemUse.subscribe(ev => {
     else {
         job?.interact(source, itemStack, "sneakRightClick");
     }
-    if (itemStack.typeId === "minecraft:diamond") source.setDynamicProperty("job", WaterMage.mageName);
-    else if (itemStack.typeId === "minecraft:iron_ingot") source.setDynamicProperty("job");
-    else if (itemStack.typeId === "minecraft:feather") {
-        const movement = source.getComponent("minecraft:movement");
-        movement.setCurrentValue(0.2);
-        source.applyDamage(0.000001, { cause: EntityDamageCause.override });
-    };
+    if (itemStack.typeId === "minecraft:diamond") SpeedSystem.addBuff(source, "av", 30)//source.setDynamicProperty("job", WaterMage.mageName);
+    else if (itemStack.typeId === "minecraft:iron_ingot") {
+        new GameSystem(world.getAllPlayers());
+    } //source.setDynamicProperty("job");
 });
 
 world.beforeEvents.entityHurt.subscribe(ev => {
     const { damage, damageSource, hurtEntity } = ev;
-    hurtEntity.sendMessage("aaa")
 });
 
 world.afterEvents.playerSwingStart.subscribe(ev => {
@@ -80,3 +78,14 @@ world.afterEvents.playerSpawn.subscribe(ev => {
     player.sp = 20;
     player.m_sp = 150;
 });
+
+// 常時処理はここに
+system.runInterval(() => {
+    SpeedSystem.updateSpeed();
+});
+
+// world.afterEvents.entitySpawn.subscribe(ev => {
+//     ev.entity.nameTag = "abcd"
+//     world.sendMessage(`id: ${ev.entity.typeId}
+// name: ${ev.entity.nameTag}`)
+// });
