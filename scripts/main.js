@@ -7,7 +7,7 @@ import { MageList } from "./job/mage_list";
 import { } from "./job/mage_base";
 import { WaterMage } from "./job/water_mage";
 import { } from "./damage_system";
-import { } from "./function";
+import { setActionBar } from "./function";
 import { ProjectileList } from "./projectile_list";
 import { SpeedSystem } from "./game/speed_system";
 import { GameSystem } from "./game/game_system";
@@ -26,7 +26,7 @@ world.afterEvents.itemUse.subscribe(ev => {
     else {
         job?.interact(source, itemStack, "sneakRightClick");
     }
-    if (itemStack.typeId === "minecraft:diamond") SpeedSystem.addBuff(source, "av", 30)//source.setDynamicProperty("job", WaterMage.mageName);
+    if (itemStack.typeId === "minecraft:diamond") source.setDynamicProperty("job", WaterMage.mageName);
     else if (itemStack.typeId === "minecraft:iron_ingot") {
         new GameSystem(world.getAllPlayers());
     } //source.setDynamicProperty("job");

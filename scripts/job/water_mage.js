@@ -115,30 +115,34 @@ export class WaterMage extends MageBase {
             /** @description 消費MP */
             mp: 18,
             /** @description 範囲　*/
-            scale: 3.25,
+            scale: 5,
             /** @description 味方への移動速度上昇(%)　*/
-            speedUp: 0.25,
+            speedUp: 0.35,
             /** @description 敵への移動速度低下(%)　*/
-            speedDown: 0.15,
+            speedDown: 0.2,
             /** @description 継続時間(tick)　*/
             time: 140,
             /** @description クールタイム(tick) */
-            cooltime: 300,
+            cooltime: 40,
             /** @description SpeedSystem用 */
             speedUpId: "waterUp",
             /** @description SpeedSystem用 */
             speedDownId: "waterDown",
             /** @description バフ・デバフ時間(tick) */
-            buffTime: 6
+            buffTime: 6,
+            /** @description 使用可能回数追加時間(tick) */
+            rechargeTime: 340,
+            /** @description 使用可能回数 */
+            stock: 2
         }
     };
 
     static rightClick(player) {
         const status = this.rightClickStatus;
         if (player) {
-            if (this.checkMainhand(player) && mpCheck(player, status.mp) && ctCheck(player, this.rightClick.name)) {
+            if (this.checkMainhand(player) && mpCheck(player, status.mp) && ctCheck(player, this.rightClick.name, 2, status.rechargeTime)) {
                 changeMp(player, -status.mp);
-                startCt(player, this.rightClick.name, status.cooltime);
+                startCt(player, this.rightClick.name, status.cooltime, 2, status.rechargeTime);
 
                 const loc = player.location;
 
@@ -173,7 +177,9 @@ export class WaterMage extends MageBase {
 ${status.time / TicksPerSecond}秒継続する<水の領域>を展開する
 <水の領域>の範囲内の味方は、移動速度が${status.speedUp * 100}％上昇し、
 範囲内の敵は、移動速度が${status.speedUp * 100}％低下する
-クールタイム : ${status.cooltime / TicksPerSecond}秒`
+クールタイム : ${status.cooltime / TicksPerSecond}秒
+ストック : ${status.stock}
+リチャージ : ${status.rechargeTime / TicksPerSecond}秒`
         };
     };
 };

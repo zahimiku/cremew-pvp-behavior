@@ -36,10 +36,15 @@ export function changeMp(player, value) {
  * @description playerのclickなどのCTが完了しているかを確認する関数
  * @param {Player} player 
  * @param {string} id
+ * @param {number?} maxStock
+ * @param {number?} rechageTime 
  * @returns 
  */
-export function ctCheck(player, id) {
-    return system.currentTick - (player[id] ?? 0) > 0;
+export function ctCheck(player, id, maxStock, rechageTime) {
+    const now = system.currentTick;
+        const value = player[id];
+    if (!maxStock) return now - (value ?? 0) > 0;
+    else return ((now - (value?.ct ?? 0) > 0) && (value?.time ?? now) - now < rechageTime * (maxStock - 1));
 };
 
 /**
@@ -47,9 +52,13 @@ export function ctCheck(player, id) {
  * @param {Player} player 
  * @param {string} id 
  * @param {number} time 
+ * @param {number?} maxStock
+ * @param {number?} rechageTime 
  */
-export function startCt(player, id, time) {
-    player[id] = system.currentTick + time;
+export function startCt(player, id, time, maxStock, rechageTime) {
+    const now = system.currentTick;
+    if (!maxStock) player[id] = now + time;
+    else player[id] = { time: Math.max((player[id]?.time ?? now), now) + rechageTime, ct: now + time };
 };
 
 /**
@@ -62,7 +71,7 @@ export function setActionBar(player) {
 
 /**
  * @description チームが影響する場合のspawnParticle
- * @param {*} player 起点となるプレイヤー
+ * @param {Player} player 起点となるプレイヤー
  * @param {*} particleId
  * @param {*} location 
  * @param {*} molang molang
@@ -81,8 +90,8 @@ export function customSpawnParticle(player, particleId, location, molang) {
 
 /**
  * @description チームが影響する場合のEntityの処理
- * @param {*} player 起点となるプレイヤー
- * @param {*} entity
+ * @param {Player} player 起点となるプレイヤー
+ * @param {Entity} entity
  */
 export function customEntity(player, entity) {
     const players = GameList.getAllVisiblePlayer(player);
