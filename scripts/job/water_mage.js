@@ -36,7 +36,7 @@ export class WaterMage extends MageBase {
             /** @description 最大存在時間(tick)　*/
             time: 20,
             /** @description クールタイム(tick) */
-            cooltime: 15
+            cooltime: 20
         }
     };
 
@@ -64,7 +64,7 @@ export class WaterMage extends MageBase {
             return `<通常攻撃>
 基礎ダメージ : ${status.damage}
 消費MP : ${status.mp}
-何かに衝突するか${status.time / TicksPerSecond}秒経つと爆発する<水球>を放つ
+何かに衝突するか${status.time / TicksPerSecond}秒経つと爆発し、敵にダメージを与える<水球>を放つ
 敵に<水球>が直撃するとその敵に${status.hitMultiplier}倍のダメージを与える
 クールタイム : ${status.cooltime / TicksPerSecond}秒`
         };
@@ -77,25 +77,22 @@ export class WaterMage extends MageBase {
      * @returns 
      */
     static waterBallExplosion(ev, entity) {
-        if (entity && !entity.isValid) return;
+        if (entity && !entity.isValid || !ev.projectile.isValid) return;
 
         let hit;
         if (entity) {
             if (!GameList.isEnemy(ev.source, entity)) return;
             hit = entity;
         }
+        ev.projectile.remove();
 
         ev.dimension.playSound("mob.dolphin.splash", ev.location, { pitch: 1.3, volume: 1.2 });
         const molang = new MolangVariableMap();
-        try {
-            customSpawnParticle(ev.source, "cremew:water_explosion", ev.location, molang);
-        } catch {
-
-        };
+        customSpawnParticle(ev.source, "cremew:water_explosion", ev.location, molang);
 
         const status = this.leftClickStatus;
 
-        for (const explosionEntity of ev.dimension.getEntities({ location: ev.location, maxDistance: status.scale, families: ["player"] })) {
+        for (const explosionEntity of ev.dimension.getEntities({ location: ev.location, maxDistance: status.scale, families: ["player"], excludeGameModes: ["Spectator", "Creative", "Survival"] })) {
             if (GameList.isEnemy(ev.source, explosionEntity)) {
                 let damage = status.damage;
                 if (explosionEntity.id === hit?.id) damage *= status.hitMultiplier;
@@ -103,9 +100,6 @@ export class WaterMage extends MageBase {
                 DamageSystem.applyDamage(explosionEntity, damage, ev.source);
             }
         }
-        if (ev.projectile.isValid) {
-            ev.projectile.remove();
-        };
     };
 
     static get rightClickStatus() {
@@ -150,18 +144,15 @@ export class WaterMage extends MageBase {
                 const molang = new MolangVariableMap();
                 molang.setFloat("time", status.time / TicksPerSecond);
                 molang.setFloat("size", status.scale);
-                try {
-                    customSpawnParticle(player, "cremew:water_area", upDirectionY(loc), molang);
-                } catch {
+                customSpawnParticle(player, "cremew:water_area", upDirectionY(loc), molang);
 
-                };
                 let i = 0;
                 const run = system.runInterval(() => {
-                    if (!(i % 5)) {
+                    if (!(i % 10)) {
                         player.dimension.playSound("bubble.downinside", loc, { pitch: 0.9, volume: 1 });
                     }
-                    i ++;
-                    for (const target of player.dimension.getPlayers({ location: loc, maxDistance: status.scale })) {
+                    i++;
+                    for (const target of player.dimension.getPlayers({ location: loc, maxDistance: status.scale, excludeGameModes: ["Spectator", "Creative", "Survival"] })) {
                         if (GameList.isEnemy(player, target)) SpeedSystem.addBuff(target, status.speedDownId, status.buffTime);
                         else SpeedSystem.addBuff(target, status.speedUpId, status.buffTime);
                     };
@@ -175,8 +166,8 @@ export class WaterMage extends MageBase {
             return `<アビリティ>
 消費MP : ${status.mp}
 ${status.time / TicksPerSecond}秒継続する<水の領域>を展開する
-<水の領域>の範囲内の味方は、移動速度が${status.speedUp * 100}％上昇し、
-範囲内の敵は、移動速度が${status.speedUp * 100}％低下する
+<水の領域>の範囲内の味方は、移動速度が${status.speedUp * 100}％上昇し
+敵は、移動速度が${status.speedUp * 100}％低下する
 クールタイム : ${status.cooltime / TicksPerSecond}秒
 ストック : ${status.stock}
 リチャージ : ${status.rechargeTime / TicksPerSecond}秒`

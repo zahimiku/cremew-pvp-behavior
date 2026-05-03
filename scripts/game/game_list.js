@@ -51,4 +51,9 @@ export class GameList {
         const game = this.get(player);
         return ((game.team1.includes(player) && game.team2.includes(target)) || (game.team1.includes(target) && game.team2.includes(player)))
     };
+
+    static isAlly(player, target) {
+        const game = this.get(player);
+        return ((game.team1.includes(player) && game.team1.includes(target)) || (game.team2.includes(target) && game.team2.includes(player)))
+    };
 };

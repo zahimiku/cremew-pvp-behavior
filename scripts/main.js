@@ -11,6 +11,7 @@ import { setActionBar } from "./function";
 import { ProjectileList } from "./projectile_list";
 import { SpeedSystem } from "./game/speed_system";
 import { GameSystem } from "./game/game_system";
+import { LoveMage } from "./job/love_mage";
 
 world.afterEvents.worldLoad.subscribe(ev => {
     console.log("loaded");
@@ -26,7 +27,7 @@ world.afterEvents.itemUse.subscribe(ev => {
     else {
         job?.interact(source, itemStack, "sneakRightClick");
     }
-    if (itemStack.typeId === "minecraft:diamond") source.setDynamicProperty("job", WaterMage.mageName);
+    if (itemStack.typeId === "minecraft:diamond") source.setDynamicProperty("job", LoveMage.mageName);
     else if (itemStack.typeId === "minecraft:iron_ingot") {
         new GameSystem(world.getAllPlayers());
     } //source.setDynamicProperty("job");
